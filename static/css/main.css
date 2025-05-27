@@ -1,0 +1,76 @@
+.header { /*настройка шапки*/
+  position: sticky;
+  top: 0;
+  width: 100%; /* Шапка займёт всю ширину окна браузера */
+  z-index: 1000; /* Высокое значение, чтобы шапка была всегда на первом плане */
+  box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 0.5)
+}
+
+body { /*настройка тела сайта по середине*/
+	overflow: hidden;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    margin: 0;
+}
+
+.body {
+	overflow: auto;
+}
+
+.login { /*настройка страници с логином и регистрацией*/
+    height: 100%;
+	margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.tiles {
+    transition: transform 0.3s;
+    border-radius: 8px;
+}
+
+.tiles:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.tiles img {
+    border-radius: 8px 8px 0 0;
+    max-height: 200px;
+    object-fit: cover;
+    width: 100%;
+}
+
+.rating {
+	color: #f39c12;
+	font-size: 1rem;
+}
+
+.gl {
+	font-size: 1.5rem;
+}
+
+.hover-effect {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-effect:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+/*Страница О нас*/
+.map-container {
+    height: 400px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.team-member img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid #ffc107;
+}
