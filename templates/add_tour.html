@@ -4,13 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="icon" href="static/images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <title>Админ-панель</title>
 </head>
 <body>
 <div class="container">
     <h2 class="my-4">Добавить новый тур</h2>
+
+    <div class="mb-3">
+        <a href="/admin/tours" type="button" class="btn btn-primary">
+            <i class="fas fa-arrow-left me-2"></i>Назад
+        </a>
+    </div>
 
     <div class="card">
         <div class="card-body">
@@ -20,11 +28,16 @@
                     <input type="text" class="form-control" id="country" name="country" required>
                 </div>
 				<div class="mb-3">
-                    <label for="agencyid" class="form-label">ID Агенства</label>
-                    <input type="text" class="form-control" id="agencyid" name="agencyid" required>
+                    <label for="agencyid" class="form-label">Агентство</label>
+                    <select class="form-select" id="agencyid" name="agencyid" required>
+                        <option value="" selected disabled>Выберите агентство</option>
+                        {% for agency in agencies %}
+                        <option value="{{ agency.id }}">{{ agency.name }} (ID: {{ agency.id }})</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="mb-3">
-                    <label for="duration" class="form-label">Продолжительность тура</label>
+                    <label for="duration" class="form-label">Продолжительность тура(дней)</label>
                     <input type="text" class="form-control" id="duration" name="duration" required>
                 </div>
                 <div class="mb-3">

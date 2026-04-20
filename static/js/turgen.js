@@ -35,6 +35,14 @@ document.getElementById('search-btn').addEventListener('click', function() {
                     По вашему запросу ничего не найдено
                 </div>
             `;
+			setTimeout(() => {
+            resultsContainer.scrollIntoView(
+			{
+                behavior: 'smooth',
+                block: 'start'
+            }
+			);
+        }, 300);
             return;
         }
 
@@ -43,7 +51,9 @@ document.getElementById('search-btn').addEventListener('click', function() {
             'Анапа': 'anapa.jpg',
             'Сочи': 'sochi.jpg',
             'Абхазия': 'abhazia.jpg',
-            'Тайланд': 'thailand.jpg'
+            'Тайланд': 'thailand.jpg',
+			'Египет': 'egypt.jpg',
+			'Турция': 'turkish.jpg'
         };
 
         let resultsHTML = '';
@@ -56,16 +66,17 @@ document.getElementById('search-btn').addEventListener('click', function() {
                 <div class="tiles bg-body-tertiary h-100 overflow-hidden">
                     <div class="text-center position-relative"> 
                         <img src="static/images/${imageFile}" 
-                             class="img-fluid w-100 clickable-tour" 
-                             style="height: 200px; object-fit: cover; cursor: pointer;" 
-                             alt="${agency.country}"
-                             data-tour-id="${agency.id}"
-                             data-name="${encodeURIComponent(agency.name)}"
-                             data-address="${encodeURIComponent(agency.address)}"
-                             data-country="${encodeURIComponent(agency.country)}"
-                             data-price="${encodeURIComponent(agency.price)}"
-                             data-description="${encodeURIComponent(agency.description || '')}"
-                             data-image="${imageFile}">
+                            class="img-fluid w-100 clickable-tour" 
+                            style="height: 200px; object-fit: cover; cursor: pointer;" 
+                            alt="${agency.country}"
+                            data-tour-id="${agency.id}"
+                            data-name="${encodeURIComponent(agency.name)}"
+                            data-address="${encodeURIComponent(agency.address)}"
+                            data-country="${encodeURIComponent(agency.country)}"
+                            data-price="${encodeURIComponent(agency.price)}"
+                            data-description="${encodeURIComponent(agency.description || '')}"
+                            data-duration="${encodeURIComponent(agency.duration || '')}"
+                            data-image="${imageFile}">
                         <div class="position-absolute bottom-0 end-0 p-2 bg-dark bg-opacity-75 text-white rounded-start"> 
                             <i class="fas fa-star text-warning"></i>
                             <span class="ms-2 rating-value" data-tour-id="${agency.id}">Загрузка...</span>
@@ -100,18 +111,21 @@ document.getElementById('search-btn').addEventListener('click', function() {
                 const country = this.getAttribute('data-country');
                 const price = this.getAttribute('data-price');
                 const description = this.getAttribute('data-description');
+                const duration = this.getAttribute('data-duration');
                 const image = this.getAttribute('data-image');
-
-                window.location.href = `/Choosing_tour?tour_id=${tourId}&name=${name}&address=${address}&country=${country}&price=${price}&description=${description}&image=${image}`;
+                
+                window.location.href = `/Choosing_tour?tour_id=${tourId}&name=${name}&address=${address}&country=${country}&price=${price}&description=${description}&duration=${duration}&image=${image}`;
             });
         });
 
         // Прокрутка к результатам
         setTimeout(() => {
-            resultsContainer.scrollIntoView({
+            resultsContainer.scrollIntoView(
+			{
                 behavior: 'smooth',
                 block: 'start'
-            });
+            }
+			);
         }, 300);
     })
     .catch(error => {

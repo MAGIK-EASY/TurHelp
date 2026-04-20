@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-100" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <title>Мой профиль</title>
+    <style>
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #0d6efd;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .profile-avatar:hover {
+            opacity: 0.8;
+        }
+        .avatar-overlay {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: #0d6efd;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .avatar-overlay:hover {
+            background: #0b5ed7;
+        }
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+        }
+        .review-card {
+            transition: transform 0.2s;
+        }
+        .review-card:hover {
+            transform: translateY(-2px);
+        }
+        .nav-tabs .nav-link {
+            color: #fff;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            color: white;
+        }
+        .image-preview-box {
+            background: #2b2b2b;
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #avatar-editor-image {
+            max-width: 100%;
+            max-height: 400px;
+        }
+        .editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 15px;
+        }
+        .editor-toolbar .btn-group {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column h-100">
+    <header class="header bg-dark sticky-top p-3 mb-3 border-bottom">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+                <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+                    <li><a href="/" class="nav-link px-2 text-white">Главная</a></li>
+                    <li><a href="/about" class="nav-link px-2 text-white">О нас</a></li>
+                    <li><a href="/stats" class="nav-link px-2 text-white">Статистика</a></li>
+                </ul>
+                <div class="text-end">
+                    {% if 'user_name' in session %}
+                        <div class="dropdown d-inline-block">
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-1"></i>{{ session['user_name'] }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% if not session.get('is_admin') %}
+                                <li><a class="dropdown-item" href="{{ url_for('profile') }}">
+                                    <i class="fas fa-user me-2"></i>Мой профиль
+                                </a></li>
+                                {% endif %}
+                                {% if session.get('is_admin') %}
+                                    <li><a class="dropdown-item" href="{{ url_for('admin_bp.admin_panel') }}">
+                                        <i class="fas fa-crown me-2"></i>Админ-панель
+                                    </a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#exit">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Выйти
+                                </a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-light me-2">Войти</a>
+                        <a href="{{ url_for('registrations') }}" class="btn btn-warning">Регистрация</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-shrink-0">
+        <div class="container">
+            <div class="row">
+                <!-- Боковая панель с аватаром -->
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <div class="avatar-container mb-3">
+                                <img src="{{ user.avatar }}" alt="Аватар" class="profile-avatar" id="main-avatar">
+                                <div class="avatar-overlay" onclick="openAvatarEditor()">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                            </div>
+                            <h3 class="mb-1">{{ user.surname }} {{ user.name }}</h3>
+                            {% if user.thname %}
+                                <p class="text-muted mb-2">{{ user.thname }}</p>
+                            {% endif %}
+                            <p class="mb-1">
+                                <i class="fas fa-phone me-2"></i>{{ user.tnumber }}
+                            </p>
+                            <p class="mb-3">
+                                <i class="fas fa-calendar me-2"></i>На сайте с {{ user.regdate }}
+                            </p>
+                            <hr>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="openEditProfile()">
+                                    <i class="fas fa-edit me-2"></i>Редактировать профиль
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="openChangePassword()">
+                                    <i class="fas fa-key me-2"></i>Сменить пароль
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Основной контент -->
+                <div class="col-md-8">
+                    <ul class="nav nav-tabs mb-3" id="profileTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">
+                                <i class="fas fa-star me-2"></i>Мои отзывы
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">
+                                <i class="fas fa-info-circle me-2"></i>Информация
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="profileTabsContent">
+                        <div class="tab-pane fade show active" id="reviews" role="tabpanel">
+                            <h4 class="mb-3">Мои отзывы</h4>
+                            {% if reviews %}
+                                {% for review in reviews %}
+                                <div class="card mb-3 review-card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    <a href="{{ url_for('tour_page', tour_id=review.tour_id, name='', address='', country=review.country, duration='', price='', description='') }}" class="text-decoration-none">
+                                                        {{ review.country }}
+                                                    </a>
+                                                </h6>
+                                                <div class="mb-2">
+                                                    {% for i in range(5) %}
+                                                        {% if i < review.stars %}
+                                                            <i class="fas fa-star text-warning"></i>
+                                                        {% else %}
+                                                            <i class="far fa-star text-warning"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                                <p class="mb-2">{{ review.description }}</p>
+                                                <small class="text-muted">{{ review.date }}</small>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMyReview({{ review.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    У вас пока нет отзывов. Оставьте отзыв о понравившемся туре!
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="tab-pane fade" id="info" role="tabpanel">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">Личная информация</h5>
+                                    <table class="table">
+                                        <tr><th width="150">Фамилия:</th><td>{{ user.surname }}</td></tr>
+                                        <tr><th>Имя:</th><td>{{ user.name }}</td></tr>
+                                        <tr><th>Отчество:</th><td>{{ user.thname or '—' }}</td></tr>
+                                        <tr><th>Дата рождения:</th><td>{{ user.birthday or '—' }}</td></tr>
+                                        <tr><th>Телефон:</th><td>{{ user.tnumber }}</td></tr>
+                                        <tr><th>Дата регистрации:</th><td>{{ user.regdate }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно редактирования АВАТАРА -->
+    <div class="modal fade" id="avatarEditorModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-camera me-2"></i>Изменить фото профиля
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">Текущее фото</div>
+                                <div class="card-body text-center">
+                                    <img src="{{ user.avatar }}" alt="Текущий аватар" id="current-avatar-preview" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                                    <button type="button" class="btn btn-outline-primary w-100" onclick="document.getElementById('avatar-file-input').click()">
+                                        <i class="fas fa-upload me-1"></i>Выбрать фото
+                                    </button>
+                                    <input type="file" id="avatar-file-input" accept="image/*" style="display: none;">
+                                    <div class="form-text mt-2">JPG, PNG, GIF до 5MB</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card" id="avatar-editor-card" style="display: none;">
+                                <div class="card-header">Редактор</div>
+                                <div class="card-body">
+                                    <div class="image-preview-box">
+                                        <img id="avatar-editor-image" alt="Редактирование">
+                                    </div>
+                                    <div class="editor-toolbar">
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-outline-light" id="avatar-rotate-left" title="Повернуть влево">
+                                                <i class="fas fa-undo-alt"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-light" id="avatar-rotate-right" title="Повернуть вправо">
+                                                <i class="fas fa-redo-alt"></i>
+                                            </button>
+                                        </div>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-outline-light" id="avatar-flip-h" title="Отразить горизонтально">
+                                                <i class="fas fa-arrows-alt-h"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-light" id="avatar-flip-v" title="Отразить вертикально">
+                                                <i class="fas fa-arrows-alt-v"></i>
+                                            </button>
+                                        </div>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-outline-light" id="avatar-zoom-in" title="Увеличить">
+                                                <i class="fas fa-search-plus"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-light" id="avatar-zoom-out" title="Уменьшить">
+                                                <i class="fas fa-search-minus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-outline-light" id="avatar-reset" title="Сбросить">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-success w-100 mt-3" id="avatar-apply-crop">
+                                        <i class="fas fa-check-circle me-2"></i>Применить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="avatar-result-section" class="alert alert-success mt-3" style="display: none;">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle fa-2x me-3"></i>
+                            <div>
+                                <strong>Готово!</strong>
+                                <br>
+                                <img id="avatar-result-preview" class="rounded-circle mt-2" style="width: 60px; height: 60px; object-fit: cover;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="avatar-save-btn" onclick="saveAvatarOnly()">
+                        <i class="fas fa-save me-1"></i>Сохранить фото
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования ПРОФИЛЯ -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-edit me-2"></i>Редактировать профиль
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="profileForm">
+                        <div class="mb-3">
+                            <label for="edit-surname" class="form-label">Фамилия *</label>
+                            <input type="text" class="form-control" id="edit-surname" name="surname" value="{{ user.surname }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-name" class="form-label">Имя *</label>
+                            <input type="text" class="form-control" id="edit-name" name="name" value="{{ user.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-thname" class="form-label">Отчество</label>
+                            <input type="text" class="form-control" id="edit-thname" name="thname" value="{{ user.thname }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-birthday" class="form-label">Дата рождения</label>
+                            <input type="date" class="form-control" id="edit-birthday" name="birthday" value="{{ user.birthday }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-tnumber" class="form-label">Номер телефона *</label>
+                            <input type="tel" class="form-control" id="edit-tnumber" name="tnumber" value="{{ user.tnumber }}" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="saveProfileData()">
+                        <i class="fas fa-save me-1"></i>Сохранить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно смены пароля -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-key me-2"></i>Сменить пароль
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label for="current-password" class="form-label">Текущий пароль</label>
+                            <input type="password" class="form-control" id="current-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-password" class="form-label">Новый пароль</label>
+                            <input type="password" class="form-control" id="new-password" required minlength="8">
+                            <small class="text-muted">Минимум 8 символов</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirm-password" class="form-label">Подтвердите пароль</label>
+                            <input type="password" class="form-control" id="confirm-password" required minlength="8">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="changePassword()">
+                        <i class="fas fa-check me-1"></i>Сменить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно выхода -->
+    <div class="modal fade" id="exit" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Выйти?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Вы действительно хотите выйти из аккаунта?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <a href="{{ url_for('logout') }}" class="btn btn-primary">Выйти</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    
+    <script>
+        // Модальные окна
+        let avatarModal, editProfileModal, passwordModal;
+        let cropper = null;
+        let croppedAvatarData = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            avatarModal = new bootstrap.Modal(document.getElementById('avatarEditorModal'));
+            editProfileModal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+            passwordModal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+            
+            // Инициализация редактора аватара
+            initAvatarEditor();
+        });
+        
+        function initAvatarEditor() {
+            const fileInput = document.getElementById('avatar-file-input');
+            const editorCard = document.getElementById('avatar-editor-card');
+            const editorImage = document.getElementById('avatar-editor-image');
+            
+            if (!fileInput) return;
+            
+            // Удаляем старый обработчик и добавляем новый
+            fileInput.removeEventListener('change', handleFileSelect);
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            function handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Проверки
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Файл слишком большой. Максимальный размер 5MB');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                if (!file.type.match('image.*')) {
+                    alert('Пожалуйста, выберите изображение');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editorCard.style.display = 'block';
+                    editorImage.src = e.target.result;
+                    
+                    // Уничтожаем старый cropper
+                    if (cropper) {
+                        cropper.destroy();
+                        cropper = null;
+                    }
+                    
+                    // Создаем новый
+                    cropper = new Cropper(editorImage, {
+                        aspectRatio: 1,
+                        viewMode: 2,
+                        dragMode: 'move',
+                        autoCropArea: 1,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: true,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        background: false,
+                        rotatable: true,
+                        scalable: true,
+                        zoomable: true
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // Кнопки редактора
+            function safeCropperAction(action) {
+                if (cropper) action();
+            }
+            
+            document.getElementById('avatar-rotate-left')?.addEventListener('click', () => safeCropperAction(() => cropper.rotate(-90)));
+            document.getElementById('avatar-rotate-right')?.addEventListener('click', () => safeCropperAction(() => cropper.rotate(90)));
+            document.getElementById('avatar-flip-h')?.addEventListener('click', () => safeCropperAction(() => {
+                const scaleX = cropper.getData().scaleX || 1;
+                cropper.scaleX(-scaleX);
+            }));
+            document.getElementById('avatar-flip-v')?.addEventListener('click', () => safeCropperAction(() => {
+                const scaleY = cropper.getData().scaleY || 1;
+                cropper.scaleY(-scaleY);
+            }));
+            document.getElementById('avatar-zoom-in')?.addEventListener('click', () => safeCropperAction(() => cropper.zoom(0.1)));
+            document.getElementById('avatar-zoom-out')?.addEventListener('click', () => safeCropperAction(() => cropper.zoom(-0.1)));
+            document.getElementById('avatar-reset')?.addEventListener('click', () => safeCropperAction(() => cropper.reset()));
+            
+            document.getElementById('avatar-apply-crop')?.addEventListener('click', function() {
+                if (!cropper) {
+                    alert('Сначала выберите изображение');
+                    return;
+                }
+                
+                const canvas = cropper.getCroppedCanvas({
+                    width: 300,
+                    height: 300,
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high'
+                });
+                
+                if (canvas) {
+                    croppedAvatarData = canvas.toDataURL('image/jpeg', 0.9);
+                    
+                    document.getElementById('avatar-result-preview').src = croppedAvatarData;
+                    document.getElementById('avatar-result-section').style.display = 'block';
+                    document.getElementById('main-avatar').src = croppedAvatarData;
+                    document.getElementById('current-avatar-preview').src = croppedAvatarData;
+                }
+            });
+            
+            // Сброс при закрытии
+            document.getElementById('avatarEditorModal')?.addEventListener('hidden.bs.modal', function() {
+                if (cropper) {
+                    cropper.destroy();
+                    cropper = null;
+                }
+                editorCard.style.display = 'none';
+                document.getElementById('avatar-result-section').style.display = 'none';
+                fileInput.value = '';
+                croppedAvatarData = null;
+                
+                // Восстанавливаем оригинал если не сохранили
+                const originalAvatar = '{{ user.avatar }}';
+                document.getElementById('main-avatar').src = originalAvatar;
+                document.getElementById('current-avatar-preview').src = originalAvatar;
+            });
+        }
+        
+        function openAvatarEditor() {
+            croppedAvatarData = null;
+            document.getElementById('avatar-editor-card').style.display = 'none';
+            document.getElementById('avatar-result-section').style.display = 'none';
+            document.getElementById('avatar-file-input').value = '';
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            avatarModal.show();
+        }
+        
+        async function saveAvatarOnly() {
+            if (!croppedAvatarData) {
+                alert('Сначала обработайте изображение');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('cropped_image', croppedAvatarData);
+            
+            // Сохраняем текущие данные профиля
+            formData.append('name', '{{ user.name }}');
+            formData.append('surname', '{{ user.surname }}');
+            formData.append('thname', '{{ user.thname or "" }}');
+            formData.append('birthday', '{{ user.birthday or "" }}');
+            formData.append('tnumber', '{{ user.tnumber }}');
+            
+            try {
+                const response = await fetch('/profile/update', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Фото профиля обновлено!');
+                    avatarModal.hide();
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            } catch (error) {
+                alert('Ошибка при сохранении: ' + error);
+            }
+        }
+        
+        function openEditProfile() {
+            editProfileModal.show();
+        }
+        
+        async function saveProfileData() {
+            const form = document.getElementById('profileForm');
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/profile/update', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Профиль обновлен!');
+                    editProfileModal.hide();
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error);
+            }
+        }
+        
+        function openChangePassword() {
+            passwordModal.show();
+        }
+        
+        async function changePassword() {
+            const current = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+            const confirm = document.getElementById('confirm-password').value;
+            
+            if (!current || !newPass || !confirm) {
+                alert('Все поля обязательны');
+                return;
+            }
+            
+            if (newPass !== confirm) {
+                alert('Пароли не совпадают');
+                return;
+            }
+            
+            if (newPass.length < 8) {
+                alert('Минимум 8 символов');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/profile/change-password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        current_password: current,
+                        new_password: newPass
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Пароль изменен!');
+                    passwordModal.hide();
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error);
+            }
+        }
+        
+        async function deleteMyReview(reviewId) {
+            if (!confirm('Удалить отзыв?')) return;
+            
+            try {
+                const response = await fetch(`/delete_review/${reviewId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error);
+            }
+        }
+        
+        // Глобальные функции
+        window.openAvatarEditor = openAvatarEditor;
+        window.saveAvatarOnly = saveAvatarOnly;
+        window.openEditProfile = openEditProfile;
+        window.saveProfileData = saveProfileData;
+        window.openChangePassword = openChangePassword;
+        window.changePassword = changePassword;
+        window.deleteMyReview = deleteMyReview;
+    </script>
+</body>
+</html>
