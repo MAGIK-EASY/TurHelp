@@ -40,7 +40,7 @@ def admin_panel():
 def manage_clients():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, surname, name, thname, birthday, tnumber FROM Clients")
+    cursor.execute("SELECT id, surname, name, thname, birthday, tnumber, regdate FROM Clients")
     clients = cursor.fetchall()
     conn.close()
     return render_template("admin_clients.html",
@@ -63,7 +63,57 @@ def delete_client(client_id):
         conn.close()
     return redirect(url_for('admin_bp.manage_clients'))
 
+# Редактирование пользователя
+@admin_bp.route('/admin/clients/edit/<int:client_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_client(client_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
+    if request.method == 'POST':
+        surname = request.form.get('surname')
+        name = request.form.get('name')
+        thname = request.form.get('thname')
+        birthday = request.form.get('birthday')
+        tnumber = request.form.get('tnumber')
+
+        try:
+            cursor.execute("""
+                UPDATE Clients 
+                SET surname=?, name=?, thname=?, birthday=?, tnumber=?
+                WHERE id=?
+            """, (surname, name, thname, birthday, tnumber, client_id))
+            conn.commit()
+            flash('Данные пользователя успешно обновлены', 'success')
+            return redirect(url_for('admin_bp.manage_clients'))
+        except sqlite3.Error as e:
+            flash(f'Ошибка при обновлении пользователя: {str(e)}', 'danger')
+        finally:
+            conn.close()
+
+    # GET запрос - показываем форму
+    cursor.execute("SELECT id, surname, name, thname, birthday, tnumber FROM Clients WHERE id=?", (client_id,))
+    client_data = cursor.fetchone()
+    conn.close()
+
+    if not client_data:
+        flash('Пользователь не найден', 'danger')
+        return redirect(url_for('admin_bp.manage_clients'))
+
+    # Преобразуем в словарь с правильным порядком полей
+    client = {
+        'id': client_data[0],
+        'surname': client_data[1],  # Фамилия
+        'name': client_data[2],  # Имя
+        'thname': client_data[3],  # Отчество
+        'birthday': client_data[4],
+        'tnumber': client_data[5]
+    }
+
+    return render_template("edit_client.html",
+                           client=client,
+                           user_name=session['user_name'],
+                           is_authenticated=True)
 
 # Управление турами
 @admin_bp.route('/admin/tours')
@@ -83,6 +133,13 @@ def manage_tours():
 @admin_bp.route('/admin/tours/add', methods=['GET', 'POST'])
 @admin_required
 def add_tour():
+    # Получаем список агентств для выпадающего списка
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name FROM Agency")
+    agencies = [{'id': row[0], 'name': row[1]} for row in cursor.fetchall()]
+    conn.close()
+
     if request.method == 'POST':
         country = request.form.get('country')
         agencyid = request.form.get('agencyid')
@@ -106,8 +163,9 @@ def add_tour():
             conn.close()
 
     return render_template("add_tour.html",
-                           user_name=session['user_name'],
-                           is_authenticated=True)
+                         agencies=agencies,
+                         user_name=session['user_name'],
+                         is_authenticated=True)
 
 @admin_bp.route('/admin/tours/delete/<int:tour_id>', methods=['POST'])
 @admin_required
@@ -123,7 +181,6 @@ def delete_tour(tour_id):
     finally:
         conn.close()
     return redirect(url_for('admin_bp.manage_tours'))
-
 
 # Скачиваем Excel
 @admin_bp.route('/admin/tours/export')
@@ -164,6 +221,64 @@ def export_tours():
     except Exception as e:
         flash(f'Ошибка при экспорте: {str(e)}', 'danger')
         return redirect(url_for('admin_bp.manage_tours'))
+
+
+# Редактирование тура
+@admin_bp.route('/admin/tours/edit/<int:tour_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_tour(tour_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        country = request.form.get('country')
+        agencyid = request.form.get('agencyid')
+        duration = request.form.get('duration')
+        price = request.form.get('price')
+        description = request.form.get('description')
+
+        try:
+            cursor.execute("""
+                UPDATE Tours 
+                SET country=?, agencyid=?, duration=?, price=?, description=?
+                WHERE id=?
+            """, (country, agencyid, duration, price, description, tour_id))
+            conn.commit()
+            flash('Данные тура успешно обновлены', 'success')
+            return redirect(url_for('admin_bp.manage_tours'))
+        except sqlite3.Error as e:
+            flash(f'Ошибка при обновлении тура: {str(e)}', 'danger')
+        finally:
+            conn.close()
+
+    # GET запрос - показываем форму
+        cursor.execute("SELECT id, country, agencyid, duration, price, description FROM Tours WHERE id=?", (tour_id,))
+    tour_data = cursor.fetchone()
+
+    # Преобразуем в словарь
+    tour = {
+        'id': tour_data[0],
+        'country': tour_data[1],
+        'agencyid': tour_data[2],
+        'duration': tour_data[3],
+        'price': tour_data[4],
+        'description': tour_data[5]
+    }
+
+    # Получаем список агентств для выпадающего списка
+    cursor.execute("SELECT id, name FROM Agency")
+    agencies = [{'id': row[0], 'name': row[1]} for row in cursor.fetchall()]
+    conn.close()
+
+    if not tour:
+        flash('Тур не найден', 'danger')
+        return redirect(url_for('admin_bp.manage_tours'))
+
+    return render_template("edit_tour.html",
+                           tour=tour,
+                           agencies=agencies,
+                           user_name=session['user_name'],
+                           is_authenticated=True)
 
 # Управление агентствами
 @admin_bp.route('/admin/agencies')
@@ -222,6 +337,54 @@ def delete_agency(agency_id):
     finally:
         conn.close()
     return redirect(url_for('admin_bp.manage_agencies'))
+
+# Редактирование агентства
+@admin_bp.route('/admin/agencies/edit/<int:agency_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_agency(agency_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        city = request.form.get('city')
+        address = request.form.get('address')
+
+        try:
+            cursor.execute("""
+                UPDATE Agency 
+                SET name=?, city=?, address=?
+                WHERE id=?
+            """, (name, city, address, agency_id))
+            conn.commit()
+            flash('Данные агентства успешно обновлены', 'success')
+            return redirect(url_for('admin_bp.manage_agencies'))
+        except sqlite3.Error as e:
+            flash(f'Ошибка при обновлении агентства: {str(e)}', 'danger')
+        finally:
+            conn.close()
+
+    # GET запрос - показываем форму
+    cursor.execute("SELECT id, name, city, address FROM Agency WHERE id=?", (agency_id,))
+    agency_data = cursor.fetchone()
+    conn.close()
+
+    if not agency_data:
+        flash('Агентство не найдено', 'danger')
+        return redirect(url_for('admin_bp.manage_agencies'))
+
+    # Преобразуем в словарь
+    agency = {
+        'id': agency_data[0],
+        'name': agency_data[1],
+        'city': agency_data[2],
+        'address': agency_data[3]
+    }
+
+    return render_template("edit_agency.html",
+                           agency=agency,
+                           user_name=session['user_name'],
+                           is_authenticated=True)
 
 # Скачиваем Excel
 @admin_bp.route('/admin/agencies/export')
