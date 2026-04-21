@@ -1,0 +1,173 @@
+.header { /*настройка шапки*/
+  position: sticky;
+  top: 0;
+  width: 100%; /* Шапка займёт всю ширину окна браузера */
+  z-index: 1000; /* Высокое значение, чтобы шапка была всегда на первом плане */
+  box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 0.5)
+}
+
+body { /*настройка тела сайта по середине*/
+	overflow: hidden;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    margin: 0;
+}
+
+.body {
+	overflow: auto;
+}
+
+.login { /*настройка страници с логином и регистрацией*/
+    height: 100%;
+	margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.tiles {
+    transition: transform 0.3s;
+    border-radius: 8px;
+}
+
+.tiles:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.tiles img {
+    border-radius: 8px 8px 0 0;
+    max-height: 200px;
+    object-fit: cover;
+    width: 100%;
+}
+
+.rating {
+	color: #f39c12;
+	font-size: 1rem;
+}
+
+.gl {
+	font-size: 1.5rem;
+}
+
+.hover-effect {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-effect:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+/*Страница О нас*/
+.map-container {
+    height: 400px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.team-member img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid #ffc107;
+}
+.spinner-border {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    vertical-align: middle;
+    border: 0.15em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border .75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to { transform: rotate(360deg); }
+}
+
+
+/* Контейнер для уведомлений */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.custom-toast {
+    min-width: 300px;
+    max-width: 400px;
+    background: #1e1e1e;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideIn 0.3s ease;
+    border-left: 4px solid;
+    backdrop-filter: blur(10px);
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+.toast-success { border-left-color: #00c853; }
+.toast-error { border-left-color: #ff3d00; }
+.toast-warning { border-left-color: #ff9800; }
+.toast-info { border-left-color: #2196f3; }
+
+.toast-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.toast-success .toast-icon { color: #00c853; }
+.toast-error .toast-icon { color: #ff3d00; }
+.toast-warning .toast-icon { color: #ff9800; }
+.toast-info .toast-icon { color: #2196f3; }
+
+.toast-content { flex: 1; }
+.toast-title { font-weight: 600; margin-bottom: 4px; font-size: 15px; }
+.toast-message { font-size: 13px; opacity: 0.8; }
+
+.toast-close {
+    color: #666;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.toast-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.spinner-border {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    vertical-align: middle;
+    border: 0.15em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border .75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to { transform: rotate(360deg); }
+}

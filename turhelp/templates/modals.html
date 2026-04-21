@@ -1,0 +1,102 @@
+<!-- Модальное окно ВХОДА -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header border-0 pb-0">
+				<h5 class="modal-title">Войти</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+			</div>
+			<div class="modal-body">
+				<div id="login-messages"></div>
+				<form id="modal-login-form">
+					<div class="form-floating mb-3">
+						<input type="number" class="form-control" id="modal-number" name="number" placeholder=" " required>
+						<label for="modal-number">Номер телефона</label>
+					</div>
+					<div class="form-floating mb-3">
+						<input type="password" class="form-control" id="modal-password" name="password" placeholder=" " required>
+						<label for="modal-password">Пароль</label>
+					</div>
+					<div class="form-check mb-3">
+						<input class="form-check-input" type="checkbox" id="modal-remember">
+						<label class="form-check-label" for="modal-remember">Запомнить меня</label>
+					</div>
+					<button type="submit" class="btn btn-primary w-100 py-2">Войти</button>
+				</form>
+				<div class="text-center mt-3">
+					Нет аккаунта? <a href="#" onclick="switchToRegister()">Зарегистрируйтесь</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Модальное окно РЕГИСТРАЦИИ -->
+<div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header border-0 pb-0">
+				<h5 class="modal-title">Регистрация</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+			</div>
+			<div class="modal-body">
+				<div id="register-messages"></div>
+				<form id="modal-register-form">
+					<div class="form-floating mb-2">
+						<input type="text" class="form-control" id="reg-name" name="name" placeholder=" " required>
+						<label for="reg-name">Имя</label>
+					</div>
+					<div class="form-floating mb-2">
+						<input type="text" class="form-control" id="reg-surname" name="surname" placeholder=" " required>
+						<label for="reg-surname">Фамилия</label>
+					</div>
+					<div class="form-floating mb-2">
+						<input type="text" class="form-control" id="reg-thname" name="thname" placeholder=" ">
+						<label for="reg-thname">Отчество</label>
+					</div>
+					<div class="form-floating mb-2">
+						<input type="date" class="form-control" id="reg-birthday" name="birthday" placeholder=" " required>
+						<label for="reg-birthday">Дата рождения</label>
+					</div>
+					<div class="form-floating mb-2">
+						<input type="number" class="form-control" id="reg-number" name="number" placeholder=" " required>
+						<label for="reg-number">Номер телефона</label>
+					</div>
+					<div class="form-floating mb-2">
+						<input type="password" class="form-control" id="reg-password" name="password" placeholder=" " required minlength="8">
+						<label for="reg-password">Пароль</label>
+					</div>
+					<div class="form-floating mb-2">
+						<input type="password" class="form-control" id="reg-confirm" name="confirm_password" placeholder=" " required oninput="checkPasswordMatch()">
+						<label for="reg-confirm">Подтвердите пароль</label>
+					</div>
+					<span id="reg-password-message" class="small"></span>
+					<button type="submit" class="btn btn-primary w-100 py-2 mt-3">Зарегистрироваться</button>
+				</form>
+				<div class="text-center mt-3">
+					Уже есть аккаунт? <a href="#" onclick="switchToLogin()">Войдите</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+	
+	
+<!-- Модальное окно выхода -->
+<div class="modal fade" id="exit" tabindex="-1" aria-labelledby="exit" aria-hidden="true">
+  <div class="modal-dialog">
+	<div class="modal-content">
+	  <div class="modal-header">
+		<h1 class="modal-title fs-5" id="exampleModalLabel">Выйти?</h1>
+		<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+	  </div>
+	  <div class="modal-body">
+		Вы действительно хотите выйти?
+	  </div>
+	  <div class="modal-footer">
+		<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+		<a href="{{ url_for('logout') }}" type="button" class="btn btn-primary">Выйти</a>
+	  </div>
+	</div>
+  </div>
+</div>
