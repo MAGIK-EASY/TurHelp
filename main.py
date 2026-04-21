@@ -12,8 +12,6 @@ import base64
 import re
 from io import BytesIO
 
-# Установка зависимостей: pip install -r requirements.txt
-
 app = Flask(__name__)
 app.secret_key = b'try_hack_this'
 app.permanent_session_lifetime = timedelta(days=30) # Сессия на 30 дней для "Запомнить меня"
@@ -392,94 +390,151 @@ def search_tours():
     return jsonify({'agencies': agencies})
 
 
-# Роут для Регистрации
+# Роут для регистрации
 @app.route('/registrations', methods=['GET', 'POST'])
 def registrations():
-  try:
     if request.method == 'POST':
-      # Получаем данные из формы
-      name = request.form.get('name', '').strip()
-      surname = request.form.get('surname', '').strip()
-      thname = request.form.get('thname', '').strip()
-      birthday = request.form.get('birthday', '').strip()
-      number = request.form.get('number', '').strip()
-      password = request.form.get('password', '').strip()
-      current_datetime = datetime.now()
-      regdate = current_datetime.strftime("%Y-%m-%d")
+        try:
+            name = request.form.get('name', '').strip()
+            surname = request.form.get('surname', '').strip()
+            thname = request.form.get('thname', '').strip()
+            birthday = request.form.get('birthday', '').strip()
+            number = request.form.get('number', '').strip()
+            password = request.form.get('password', '').strip()
 
-      hashpass = generate_password_hash(password) # Хэшированный пароль
+            # Проверка обязательных полей
+            if not all([name, surname, birthday, number, password]):
+                error_msg = 'Все поля кроме отчества обязательны для заполнения'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'error': error_msg})
+                flash(error_msg, 'danger')
+                return render_template('registrations.html')
 
-      conn = sqlite3.connect('turhelp.db')
-      cursor = conn.cursor()
+            # Проверка длины пароля
+            if len(password) < 8:
+                error_msg = 'Пароль должен быть не менее 8 символов'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'error': error_msg})
+                flash(error_msg, 'danger')
+                return render_template('registrations.html')
 
+            hashpass = generate_password_hash(password)
+            regdate = datetime.now().strftime("%Y-%m-%d")
 
-      # Проверяем, есть ли уже такой номер
-      cursor.execute("SELECT id FROM Clients WHERE tnumber = ?", (number,))
-      if cursor.fetchone():
-        flash('Этот номер телефона уже зарегистрирован. Хотите войти?', 'warning')
+            conn = sqlite3.connect('turhelp.db')
+            cursor = conn.cursor()
 
-      # Регистрируем нового пользователя
-      cursor.execute("INSERT INTO Clients (name, surname, thname, birthday, tnumber, password, regdate) VALUES (?, ?, ?, ?, ?, ?, ?)", (name, surname, thname, birthday, number, hashpass, regdate)) #""
-      conn.commit()
+            # Проверяем, есть ли уже такой номер
+            cursor.execute("SELECT id FROM Clients WHERE tnumber = ?", (number,))
+            if cursor.fetchone():
+                conn.close()
+                error_msg = 'Этот номер телефона уже зарегистрирован'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'error': error_msg})
+                flash(error_msg, 'warning')
+                return render_template('registrations.html')
 
-      # Авторизуем пользователя
-      session['user_name'] = name
-      conn.close()
+            # Регистрируем нового пользователя
+            cursor.execute(
+                "INSERT INTO Clients (name, surname, thname, birthday, tnumber, password, regdate) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (name, surname, thname, birthday, number, hashpass, regdate)
+            )
+            conn.commit()
 
-      return redirect(url_for('home'))
+            # Получаем ID нового пользователя
+            user_id = cursor.lastrowid
+            conn.close()
+
+            # Авторизуем пользователя
+            session['user_id'] = user_id
+            session['user_name'] = name
+            session['is_admin'] = False
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True, 'message': 'Регистрация успешна'})
+
+            return redirect(url_for('home'))
+
+        except sqlite3.IntegrityError as e:
+            error_msg = 'Ошибка регистрации: пользователь с такими данными уже существует'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': error_msg})
+            flash(error_msg, 'danger')
+            return render_template('registrations.html')
+        except Exception as e:
+            app.logger.error(f"Registration error: {str(e)}")
+            error_msg = 'Произошла ошибка при регистрации'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': error_msg})
+            flash(error_msg, 'danger')
+            return render_template('registrations.html')
 
     return render_template("registrations.html")
 
-  except sqlite3.IntegrityError:
-    flash('Ошибка регистрации')
-    return render_template('registrations.html')
 
-
-# Роут для логина(вход в аккаунт)
+# Роут для логина
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-  if request.method == 'POST':
-    # Получаем данные из формы
-    number = request.form.get('number', '').strip()
-    password = request.form.get('password', '').strip()
+    if request.method == 'POST':
+        number = request.form.get('number', '').strip()
+        password = request.form.get('password', '').strip()
 
-    # Сначала проверяем, не это ли администратор
-    if number == ADMIN_CREDENTIALS['number'] and check_password_hash(ADMIN_CREDENTIALS['password'], password):
-        session['user_name'] = 'Администратор'
-        session['is_admin'] = True
-        if request.form.get('remember-me'):
-            session.permanent = True
-        return redirect(url_for('admin_bp.admin_panel'))
+        # Проверка обязательных полей
+        if not number or not password:
+            error_msg = 'Введите номер телефона и пароль'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': error_msg})
+            flash(error_msg, 'danger')
+            return render_template('login.html')
 
-    conn = sqlite3.connect('turhelp.db')
-    cursor = conn.cursor()
+        # Проверяем админа
+        if number == ADMIN_CREDENTIALS['number'] and check_password_hash(ADMIN_CREDENTIALS['password'], password):
+            session['user_id'] = 0
+            session['user_name'] = 'Администратор'
+            session['is_admin'] = True
+            if request.form.get('remember-me'):
+                session.permanent = True
 
-    # Ищем пользователя в базе данных
-    cursor.execute("SELECT name, tnumber, password FROM Clients WHERE tnumber = ?", (number,))
-    user = cursor.fetchone() # берет кортеж данных
-    conn.close()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True, 'message': 'Вход выполнен'})
+            return redirect(url_for('admin_bp.admin_panel'))
 
-    if user:
-      stored_name, stored_number, stored_password = user
-      # Проверяем пароль (в нашей текущей реализации пароли хранятся в зашифрованном виде)
-      if check_password_hash(stored_password, password):
-        # Устанавливаем сессию
-        session['user_name'] = stored_name
+        conn = sqlite3.connect('turhelp.db')
+        cursor = conn.cursor()
 
-        # Обработка "Запомнить меня"
-        if request.form.get('remember-me'):
-          session.permanent = True
+        # Ищем пользователя по номеру телефона
+        cursor.execute("SELECT id, name, password FROM Clients WHERE tnumber = ?", (number,))
+        user = cursor.fetchone()
+        conn.close()
 
-        return redirect(url_for('home'))
-      else:
-        flash('Неверный пароль', 'danger')
-    else:
-      flash('Пользователь с таким номером не найден', 'danger')
+        if user:
+            user_id, user_name, stored_password = user
+            if check_password_hash(stored_password, password):
+                session['user_id'] = user_id
+                session['user_name'] = user_name
+                session['is_admin'] = False
 
-    return render_template("login.html", number=number)
+                if request.form.get('remember-me'):
+                    session.permanent = True
 
-  # GET запрос - просто отображаем форму
-  return render_template("login.html")
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': True, 'message': 'Вход выполнен'})
+
+                return redirect(url_for('home'))
+            else:
+                error_msg = 'Неверный пароль'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'error': error_msg})
+                flash(error_msg, 'danger')
+        else:
+            error_msg = 'Пользователь с таким номером не найден'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': error_msg})
+            flash(error_msg, 'danger')
+
+        return render_template("login.html", number=number)
+
+    return render_template("login.html")
 
 
 # Роут для выхода из профиля пользователя
@@ -560,7 +615,8 @@ def get_reviews(tour_id):
     try:
         with db_connection() as cursor:
             cursor.execute("""
-                SELECT r.id, r.stars, r.description, r.date, c.name 
+                SELECT r.id, r.stars, r.description, r.date, 
+                       c.name, c.surname, c.avatar
                 FROM reviews r
                 JOIN Clients c ON r.clientid = c.id
                 WHERE r.tourid = ?
@@ -568,18 +624,29 @@ def get_reviews(tour_id):
             """, (tour_id,))
             reviews = cursor.fetchall()
 
-        if not reviews:  # Если отзывов нет
+        if not reviews:
             return jsonify({'reviews': []})
 
         # Форматируем отзывы для отправки
         formatted_reviews = []
         for review in reviews:
+            # Формируем полное имя
+            full_name = f"{review[5] or ''} {review[4] or ''}".strip()
+            if not full_name:
+                full_name = 'Аноним'
+
+            # Путь к аватару
+            avatar = review[6] if review[6] else '/static/images/default-avatar.png'
+
             formatted_reviews.append({
                 'id': review[0],
                 'stars': review[1],
                 'description': review[2],
                 'date': review[3],
-                'author': review[4] if review[4] else 'Аноним'
+                'name': review[4],
+                'surname': review[5],
+                'full_name': full_name,
+                'avatar': avatar
             })
 
         return jsonify({'reviews': formatted_reviews})

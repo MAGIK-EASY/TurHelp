@@ -52,75 +52,113 @@ function loadTourRating(tourId) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-	// Получаем ID тура из URL
+	// Получаем данные тура из sessionStorage
+	const tourData = JSON.parse(sessionStorage.getItem('selectedTour'));
+	
+	// Получаем ID тура из URL или из sessionStorage
 	const urlParams = new URLSearchParams(window.location.search);
-	const tourId = urlParams.get('tour_id') || 1;
-
+	let tourId = urlParams.get('tour_id');
+	
+	// Если нет данных в sessionStorage, используем ID из URL
+	if (!tourData) {
+		if (!tourId) {
+			console.error('Нет данных о туре');
+			return;
+		}
+		// Если есть только ID, можно загрузить данные с сервера
+		fetchTourDataFromServer(tourId);
+		return;
+	}
+	
+	// Используем ID из данных тура, если он не передан в URL
+	if (!tourId) {
+		tourId = tourData.id;
+	}
+	
 	// Загружаем рейтинг тура
 	loadTourRating(tourId);
-
+	
 	// Устанавливаем изображение тура
-	const imageFile = urlParams.get('image') || 'default.jpg';
+	const imageFile = tourData.image || 'default.jpg';
 	document.getElementById('tour-image').src = `static/images/${imageFile}`;
-
-	// Обновляем информацию о туре
-	document.getElementById('tour-name').textContent = decodeURIComponent(urlParams.get('name') || 'Название тура');
-	document.getElementById('tour-address').textContent = decodeURIComponent(urlParams.get('address') || 'Адрес не указан');
-	document.getElementById('tour-country').textContent = decodeURIComponent(urlParams.get('country') || 'Страна не указана');
-	document.getElementById('tour-price').textContent = (decodeURIComponent(urlParams.get('price') || 'Цена не указана') + ' руб.');
-	document.getElementById('tour-description').textContent = decodeURIComponent(urlParams.get('description') || 'Описание отсутствует');
-
+	
+	// Обновляем информацию о туре из sessionStorage
+	document.getElementById('tour-name').textContent = tourData.name || 'Название тура';
+	document.getElementById('tour-address').textContent = tourData.address || 'Адрес не указан';
+	document.getElementById('tour-country').textContent = tourData.country || 'Страна не указана';
+	document.getElementById('tour-price').textContent = (tourData.price || 'Цена не указана') + ' руб.';
+	document.getElementById('tour-description').textContent = tourData.description || 'Описание отсутствует';
+	
+	// Устанавливаем длительность, если есть такой элемент
+	const durationElement = document.getElementById('tour-duration');
+	if (durationElement && tourData.duration) {
+		durationElement.textContent = tourData.duration;
+	}
 
 	// Функция загрузки отзывов
 	function loadReviews() {
-		fetch(`/get_reviews/${tourId}`)
-			.then(response => {
-				if (!response.ok) throw new Error('Ошибка загрузки отзывов');
-				return response.json();
-			})
-			.then(data => {
-				const container = document.getElementById('reviews-container');
-				container.innerHTML = '';
+    fetch(`/get_reviews/${tourId}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Ошибка загрузки отзывов');
+            return response.json();
+        })
+        .then(data => {
+            const container = document.getElementById('reviews-container');
+            container.innerHTML = '';
 
-				// После загрузки отзывов обновляем рейтинг
-				loadTourRating(tourId);
+            // После загрузки отзывов обновляем рейтинг
+            loadTourRating(tourId);
 
-				if (!data.reviews || data.reviews.length === 0) {
-					container.innerHTML = '<div class="alert alert-info">Пока нет отзывов. Будьте первым!</div>';
-					return;
-				}
+            if (!data.reviews || data.reviews.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">Пока нет отзывов. Будьте первым!</div>';
+                return;
+            }
 
-				data.reviews.forEach(review => {
-					const stars = '★'.repeat(review.stars) + '☆'.repeat(5 - review.stars);
-					const reviewElement = document.createElement('div');
-					reviewElement.className = 'card mb-3';
-					reviewElement.id = `review-${review.id}`;
+            data.reviews.forEach(review => {
+                const stars = '★'.repeat(review.stars) + '☆'.repeat(5 - review.stars);
+                const reviewElement = document.createElement('div');
+                reviewElement.className = 'card mb-3';
+                reviewElement.id = `review-${review.id}`;
 
-					// Проверяем, может ли пользователь удалить этот отзыв
-					const canDelete = (currentUser === review.author) || isAdmin;
+                // Проверяем, может ли пользователь удалить этот отзыв
+                const canDelete = (currentUser === review.name) || isAdmin;
 
-					reviewElement.innerHTML = `
-							   <div class="card-body">
-								   <div class="d-flex justify-content-between align-items-start">
-									   <h5 class="card-title mb-0">${review.author || 'Аноним'}</h5>
-									   ${canDelete ? `<button class="btn btn-sm btn-outline-danger delete-review" data-review-id="${review.id}">
-										   <i class="fas fa-trash"></i>
-									   </button>` : ''}
-								   </div>
-								   <div class="mb-2 text-warning">${stars}</div>
-								   <p class="card-text">${review.description}</p>
-								   <small class="text-muted">${new Date(review.date).toLocaleDateString()}</small>
-							   </div>
-					`;
-					container.appendChild(reviewElement);
-				});
-			})
-			.catch(error => {
-				console.error('Error:', error);
-				document.getElementById('reviews-container').innerHTML =
-					`<div class="alert alert-danger">Ошибка загрузки отзывов: ${error.message}</div>`;
-			});
-	}
+                reviewElement.innerHTML = `
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex align-items-center gap-3">
+                                <!-- Аватар комментатора -->
+                                <img src="${review.avatar}" 
+                                     alt="${review.full_name}" 
+                                     class="rounded-circle"
+                                     style="width: 50px; height: 50px; object-fit: cover;"
+                                     onerror="this.src='/static/images/default-avatar.png'">
+                                <div>
+                                    <h6 class="card-title mb-1">${review.full_name}</h6>
+                                    <div class="mb-1 text-warning">${stars}</div>
+                                </div>
+                            </div>
+                            ${canDelete ? `
+                                <button class="btn btn-sm btn-outline-danger delete-review" data-review-id="${review.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                        <p class="card-text mt-3">${review.description}</p>
+                        <small class="text-muted">
+                            <i class="far fa-calendar-alt me-1"></i>${new Date(review.date).toLocaleDateString('ru-RU')}
+                        </small>
+                    </div>
+                `;
+                container.appendChild(reviewElement);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('reviews-container').innerHTML =
+                `<div class="alert alert-danger">Ошибка загрузки отзывов: ${error.message}</div>`;
+        });
+}
 
 	// Обработчик отправки нового отзыва
 	const submitBtn = document.getElementById('submit-review');
@@ -209,3 +247,39 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Первоначальная загрузка отзывов
 	loadReviews();
 });
+
+// Резервная функция для загрузки данных с сервера (если нет данных в sessionStorage)
+function fetchTourDataFromServer(tourId) {
+	fetch(`/get_tour_details/${tourId}`)
+		.then(response => {
+			if (!response.ok) throw new Error('Ошибка загрузки данных тура');
+			return response.json();
+		})
+		.then(tourData => {
+			// Загружаем рейтинг тура
+			loadTourRating(tourId);
+			
+			// Устанавливаем изображение тура
+			const imageFile = tourData.image || 'default.jpg';
+			document.getElementById('tour-image').src = `static/images/${imageFile}`;
+			
+			// Обновляем информацию о туре
+			document.getElementById('tour-name').textContent = tourData.name || 'Название тура';
+			document.getElementById('tour-address').textContent = tourData.address || 'Адрес не указан';
+			document.getElementById('tour-country').textContent = tourData.country || 'Страна не указана';
+			document.getElementById('tour-price').textContent = (tourData.price || 'Цена не указана') + ' руб.';
+			document.getElementById('tour-description').textContent = tourData.description || 'Описание отсутствует';
+			
+			const durationElement = document.getElementById('tour-duration');
+			if (durationElement && tourData.duration) {
+				durationElement.textContent = tourData.duration;
+			}
+			
+			// Загружаем отзывы
+			loadReviews();
+		})
+		.catch(error => {
+			console.error('Error loading tour data:', error);
+			alert('Ошибка при загрузке данных тура');
+		});
+}

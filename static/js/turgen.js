@@ -103,20 +103,26 @@ document.getElementById('search-btn').addEventListener('click', function() {
         });
 
         // Добавляем обработчики клика для всех изображений туров
-        document.querySelectorAll('.clickable-tour').forEach(img => {
-            img.addEventListener('click', function() {
-                const tourId = this.getAttribute('data-tour-id');
-                const name = this.getAttribute('data-name');
-                const address = this.getAttribute('data-address');
-                const country = this.getAttribute('data-country');
-                const price = this.getAttribute('data-price');
-                const description = this.getAttribute('data-description');
-                const duration = this.getAttribute('data-duration');
-                const image = this.getAttribute('data-image');
-                
-                window.location.href = `/Choosing_tour?tour_id=${tourId}&name=${name}&address=${address}&country=${country}&price=${price}&description=${description}&duration=${duration}&image=${image}`;
-            });
-        });
+		document.querySelectorAll('.clickable-tour').forEach(img => {
+			img.addEventListener('click', function() {
+				const tourData = {
+					id: this.getAttribute('data-tour-id'),
+					name: decodeURIComponent(this.getAttribute('data-name')),
+					address: decodeURIComponent(this.getAttribute('data-address')),
+					country: decodeURIComponent(this.getAttribute('data-country')),
+					price: decodeURIComponent(this.getAttribute('data-price')),
+					description: decodeURIComponent(this.getAttribute('data-description')),
+					duration: decodeURIComponent(this.getAttribute('data-duration')),
+					image: this.getAttribute('data-image')
+				};
+				
+				// Сохраняем данные в sessionStorage
+				sessionStorage.setItem('selectedTour', JSON.stringify(tourData));
+				
+				// Передаем только ID в URL
+				window.location.href = `/Choosing_tour?tour_id=${tourData.id}`;
+			});
+		});
 
         // Прокрутка к результатам
         setTimeout(() => {
