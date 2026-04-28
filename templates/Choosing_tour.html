@@ -137,7 +137,7 @@
 
 		<script>
 			// Передаем данные из Flask в JavaScript
-			const currentUser = "{{ session.get('user_name', '') }}";
+			const currentUserId = "{{ session.get('user_id', '') }}";
 			const isAdmin = {{ 'true' if session.get('is_admin', False) else 'false' }};
 		</script>
 

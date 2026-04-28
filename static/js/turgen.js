@@ -60,6 +60,7 @@ document.getElementById('search-btn').addEventListener('click', function() {
 
         data.agencies.forEach((agency) => {
             const imageFile = countryImages[agency.country] || 'default.jpg';
+			
 
             resultsHTML += `
             <div class="col-12 col-md-6 px-2 mb-3">

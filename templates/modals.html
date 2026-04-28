@@ -10,7 +10,7 @@
 				<div id="login-messages"></div>
 				<form id="modal-login-form">
 					<div class="form-floating mb-3">
-						<input type="number" class="form-control" id="modal-number" name="number" placeholder=" " required>
+						<input type="text" class="form-control" id="modal-number" name="number" placeholder=" " required>
 						<label for="modal-number">Номер телефона</label>
 					</div>
 					<div class="form-floating mb-3">
@@ -59,11 +59,11 @@
 						<label for="reg-birthday">Дата рождения</label>
 					</div>
 					<div class="form-floating mb-2">
-						<input type="number" class="form-control" id="reg-number" name="number" placeholder=" " required>
+						<input type="text" class="form-control" id="reg-number" name="number" placeholder=" " required>
 						<label for="reg-number">Номер телефона</label>
 					</div>
 					<div class="form-floating mb-2">
-						<input type="password" class="form-control" id="reg-password" name="password" placeholder=" " required minlength="8">
+						<input type="password" class="form-control" id="reg-password" name="password" placeholder=" " required minlength="8" required oninput="checkPasswordMatch()">
 						<label for="reg-password">Пароль</label>
 					</div>
 					<div class="form-floating mb-2">

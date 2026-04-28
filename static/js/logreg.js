@@ -54,18 +54,18 @@ function showToast(message, type = 'info', title = '', duration = 4000) {
     }, duration);
 }
 
+function normalizePhone(phone) {
+    let cleaned = phone.replace(/[^\d]/g, '');
+    if (cleaned.startsWith('8')) {
+        cleaned = '7' + cleaned.substring(1);
+    }
+    return cleaned;
+}
+
 // ========== Вспомогательные функции ==========
 function showMessage(containerId, text, type) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
-    container.innerHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show py-2" role="alert">
-            <i class="fas fa-${type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
-            ${text}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    `;
 }
 
 function clearMessages(containerId) {
@@ -165,6 +165,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+		const phoneField = document.getElementById('reg-number');
+		if (phoneField) {
+			phoneField.value = normalizePhone(phoneField.value);
+		}
+		const loginPhoneField = document.getElementById('modal-number');
+		if (loginPhoneField) {
+			loginPhoneField.value = normalizePhone(loginPhoneField.value);
+		}
+		
         const formData = new FormData(this);
         clearMessages('register-messages');
         

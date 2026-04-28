@@ -120,14 +120,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 reviewElement.className = 'card mb-3';
                 reviewElement.id = `review-${review.id}`;
 
-                // Проверяем, может ли пользователь удалить этот отзыв
-                const canDelete = (currentUser === review.name) || isAdmin;
+                // Проверяем по ID, имя не нужно
+                const canDelete = (currentUserId && currentUserId.toString() === review.client_id.toString()) || isAdmin;
 
                 reviewElement.innerHTML = `
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="d-flex align-items-center gap-3">
-                                <!-- Аватар комментатора -->
                                 <img src="${review.avatar}" 
                                      alt="${review.full_name}" 
                                      class="rounded-circle"
@@ -144,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </button>
                             ` : ''}
                         </div>
-                        <p class="card-text mt-3">${review.description}</p>
+                        <p class="card-text mt-3">${escapeHtml(review.description)}</p>
                         <small class="text-muted">
                             <i class="far fa-calendar-alt me-1"></i>${new Date(review.date).toLocaleDateString('ru-RU')}
                         </small>
@@ -282,4 +281,11 @@ function fetchTourDataFromServer(tourId) {
 			console.error('Error loading tour data:', error);
 			alert('Ошибка при загрузке данных тура');
 		});
+}
+
+// Вспомогательная функция для экранирования HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }

@@ -201,28 +201,30 @@ function initAvatarEditor() {
     document.getElementById('avatar-zoom-out')?.addEventListener('click', () => safeCropperAction(() => cropper.zoom(-0.1)));
     document.getElementById('avatar-reset')?.addEventListener('click', () => safeCropperAction(() => cropper.reset()));
     
-    document.getElementById('avatar-apply-crop')?.addEventListener('click', function() {
-        if (!cropper) {
-            showToast('Сначала выберите изображение', 'warning');
-            return;
-        }
-        
-        const canvas = cropper.getCroppedCanvas({
-            width: 300,
-            height: 300,
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: 'high'
-        });
-        
-        if (canvas) {
-            croppedAvatarData = canvas.toDataURL('image/jpeg', 0.9);
-            document.getElementById('avatar-result-preview').src = croppedAvatarData;
-            document.getElementById('avatar-result-section').style.display = 'block';
-            document.getElementById('main-avatar').src = croppedAvatarData;
-            document.getElementById('current-avatar-preview').src = croppedAvatarData;
-            showToast('Изображение обработано!', 'success');
-        }
-    });
+	document.getElementById('avatar-apply-crop')?.addEventListener('click', function() {
+		if (!cropper) {
+			showToast('Сначала выберите изображение', 'warning');
+			return;
+		}
+		
+		const canvas = cropper.getCroppedCanvas({
+			width: 300,
+			height: 300,
+			imageSmoothingEnabled: true,
+			imageSmoothingQuality: 'high'
+		});
+		
+		if (canvas) {
+			croppedAvatarData = canvas.toDataURL('image/jpeg', 0.9);
+			document.getElementById('avatar-result-section').style.display = 'block';
+			
+			// Обновляем аватар на странице
+			document.getElementById('main-avatar').src = croppedAvatarData;
+			document.getElementById('current-avatar-preview').src = croppedAvatarData;
+			
+			showToast('Изображение обработано! Нажмите "Сохранить фото"', 'success');
+		}
+	});
     
     // При открытии модального окна сохраняем текущий аватар
     document.getElementById('avatarEditorModal')?.addEventListener('shown.bs.modal', function() {

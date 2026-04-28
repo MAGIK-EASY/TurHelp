@@ -54,46 +54,53 @@
 			</div>
 		</div>
 	</header>
-	<main>
-		<div class="back position-relative overflow-hidden p-3 p-md-5 m-md-3 text-center bg-body-tertiary vh-100">
-			<div class="d-flex align-items-center justify-content-center h-100">
-				<div class="col-md-6 p-lg-5 mb-6">
-					<div class="product-device shadow-sm d-none d-md-block"></div>
-					<h1 class="display-3 fw-bold">Туры вашего города</h1>
-					<h3 class="fw-normal text-muted mb-3">Найдите доступные турагенства в вашем городе</h3>
-					<div class="container-fluid">
-						<div class="row">
-							<div class="col">
-								<select class="form-select form-select-lg mb-3" id="select-city" data-bs-theme="light" aria-label="Select city">
-									<option value="" selected disabled>Выберите ваш город</option>
-									{% for name in cities %}
-									<option value="{{ name }}">{{ name }}</option>
-									{% endfor %}
-								</select>
-							</div>
+<main>
+                <section class="rf-hero">
+                        <div class="rf-glow"></div>
 
-							<div class="col">
-								<select class="form-select form-select-lg mb-3" id="select-country" data-bs-theme="light" aria-label="Select country">
-									<option value="" selected disabled>Выберите страну для тура</option>
-									{% for name in countries %}
-									<option value="{{ name }}">{{ name }}</option>
-									{% endfor %}
-								</select>
-							</div>
-						</div>
-					</div>
-					<button id="search-btn" class="btn btn-primary btn-lg">Найти</button>
-				</div>
-			</div>
-		</div>
-		
-		<div class="container-fluid px-0" id="scrollhere">
-			<div class="row g-3 mx-0 tour-results" >
-				<!-- Здесь будут появляться результаты поиска -->
-			</div>
-		</div>
+                        <h1 class="rf-headline">Туры вашего города</h1>
+                        <p class="rf-subheading">Найдите доступные турагенства в вашем городе</p>
 
-	</main>
+                        <div class="rf-card">
+                                <div class="rf-fields">
+                                        <div>
+                                                <label class="rf-field-label">Город отправления</label>
+                                                <div class="rf-select-wrap">
+                                                        <i class="fas fa-map-marker-alt rf-select-icon"></i>
+                                                        <select class="rf-select" id="select-city" aria-label="Select city">
+                                                                <option value="" selected disabled>Выберите ваш город</option>
+                                                                {% for name in cities %}
+                                                                <option value="{{ name }}">{{ name }}</option>
+                                                                {% endfor %}
+                                                        </select>
+                                                </div>
+                                        </div>
+                                        <div>
+                                                <label class="rf-field-label">Направление</label>
+                                                <div class="rf-select-wrap">
+                                                        <i class="fas fa-globe rf-select-icon"></i>
+                                                        <select class="rf-select" id="select-country" aria-label="Select country">
+                                                                <option value="" selected disabled>Выберите страну для тура</option>
+                                                                {% for name in countries %}
+                                                                <option value="{{ name }}">{{ name }}</option>
+                                                                {% endfor %}
+                                                        </select>
+                                                </div>
+                                        </div>
+                                </div>
+
+                                <button id="search-btn" class="rf-search-btn">
+                                        <i class="fas fa-search"></i>
+                                        Найти
+                                </button>
+                        </div>
+                </section>
+
+                <div class="container-fluid px-0" id="scrollhere">
+                        <div class="row g-3 mx-0 tour-results">
+                        </div>
+                </div>
+        </main>
 
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 	<script src="static/js/turgen.js"></script>
