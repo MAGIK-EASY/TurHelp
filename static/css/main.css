@@ -171,3 +171,178 @@ body { /*настройка тела сайта по середине*/
 @keyframes spinner-border {
     to { transform: rotate(360deg); }
 }
+
+.rf-hero {
+		min-height: calc(100vh - 64px);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 48px 24px;
+		position: relative;
+		overflow: hidden;
+}
+.rf-glow {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -60%);
+		width: 560px;
+		height: 560px;
+		background: radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%);
+		border-radius: 50%;
+		pointer-events: none;
+}
+.rf-headline {
+		font-size: clamp(2.6rem, 6vw, 4.2rem);
+		font-weight: 800;
+		letter-spacing: -0.03em;
+		line-height: 1.1;
+		color: rgba(255,255,255,0.96);
+		margin: 0 0 16px 0;
+		text-align: center;
+}
+.rf-subheading {
+		font-size: 17px;
+		font-weight: 300;
+		color: #71717a;
+		margin: 0 0 40px 0;
+		text-align: center;
+		max-width: 440px;
+}
+.rf-card {
+		width: 100%;
+		max-width: 640px;
+		background: rgba(255,255,255,0.045);
+		border: 1px solid rgba(255,255,255,0.09);
+		border-radius: 16px;
+		backdrop-filter: blur(20px);
+		-webkit-backdrop-filter: blur(20px);
+		box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+		padding: 28px 28px 28px;
+		position: relative;
+		z-index: 1;
+}
+.rf-fields {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+		margin-bottom: 16px;
+}
+@media (max-width: 540px) {
+		.rf-fields { grid-template-columns: 1fr; }
+}
+.rf-field-label {
+		display: block;
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #71717a;
+		margin-bottom: 8px;
+		padding-left: 2px;
+}
+.rf-select-wrap {
+		position: relative;
+}
+.rf-select-icon {
+		position: absolute;
+		left: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		color: #71717a;
+		font-size: 13px;
+		pointer-events: none;
+		z-index: 2;
+}
+.rf-select {
+		width: 100%;
+		height: 46px;
+		padding: 0 14px 0 34px;
+		background: rgba(0,0,0,0.35);
+		border: 1px solid rgba(255,255,255,0.1);
+		border-radius: 9px;
+		color: #fff;
+		font-size: 14px;
+		appearance: none;
+		-webkit-appearance: none;
+		cursor: pointer;
+		transition: border-color 0.2s, background 0.2s;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 12px center;
+}
+.rf-select option { background: #1c1c1f; color: #fff; }
+.rf-select:focus {
+		outline: none;
+		border-color: rgba(37,99,235,0.6);
+		background-color: rgba(0,0,0,0.5);
+		box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+}
+.rf-select:hover { border-color: rgba(255,255,255,0.2); }
+
+.rf-search-btn {
+		width: 100%;
+		height: 48px;
+		border: none;
+		border-radius: 9px;
+		background: #2563eb;
+		color: #fff;
+		font-size: 16px;
+		font-weight: 500;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+		box-shadow: 0 0 22px rgba(37,99,235,0.35);
+		letter-spacing: 0.01em;
+}
+.rf-search-btn:hover {
+		background: #1d4ed8;
+		box-shadow: 0 0 32px rgba(37,99,235,0.55);
+}
+.rf-search-btn:active { transform: scale(0.99); }
+
+.tour-results {
+    margin-top: 80px;
+    padding-top: 40px;
+    position: relative;
+}
+
+.tour-results::before,
+.tour-results::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 45%;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(37,99,235,0.5), 
+        rgba(255,255,255,0.2)
+    );
+}
+
+.tour-results::before {
+    left: 5%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255,255,255,0.2), 
+        rgba(37,99,235,0.5)
+    );
+}
+
+.tour-results::after {
+    right: 5%;
+    background: linear-gradient(90deg, 
+        rgba(37,99,235,0.5), 
+        rgba(255,255,255,0.2), 
+        transparent
+    );
+}
+
+.tour-results {
+    --gap: 60px;
+}
