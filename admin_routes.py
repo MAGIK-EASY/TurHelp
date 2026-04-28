@@ -4,9 +4,19 @@ import sqlite3
 from openpyxl import Workbook
 from flask import make_response
 from io import BytesIO
+import re
 
 #Создаем Blueprint для админских маршрутов
 admin_bp = Blueprint('admin_bp', __name__, template_folder='templates')
+
+def normalize_phone_number(phone):
+    """Приводит номер телефона к формату 7XXXXXXXXXX"""
+    if not phone:
+        return phone
+    cleaned = re.sub(r'[^\d]', '', phone.strip())
+    if cleaned.startswith('8'):
+        cleaned = '7' + cleaned[1:]
+    return cleaned
 
 # Создает и возвращает соединение с базой данных
 def get_db_connection():
@@ -76,6 +86,8 @@ def edit_client(client_id):
         thname = request.form.get('thname')
         birthday = request.form.get('birthday')
         tnumber = request.form.get('tnumber')
+
+        tnumber = normalize_phone_number(tnumber)
 
         try:
             cursor.execute("""

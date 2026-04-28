@@ -134,24 +134,40 @@ def save_avatar(file, user_id):
         app.logger.error(f"Error saving avatar: {str(e)}")
         return None
 
+
+def normalize_phone_number(phone):
+    if not phone:
+        return phone
+
+    # Удаляем все нецифровые символы
+    cleaned = re.sub(r'[^\d]', '', phone.strip())
+
+    # Если номер начинается с 8, заменяем на 7
+    if cleaned.startswith('8'):
+        cleaned = '7' + cleaned[1:]
+
+    # Если номер начинается с 7, оставляем как есть
+    # Если номер пустой или слишком короткий, возвращаем как есть
+    return cleaned
+
 # Роут для страницы профиля
 @app.route('/profile')
 def profile():
-    if 'user_name' not in session:
+    if 'user_id' not in session:
         flash('Для доступа к профилю необходимо войти', 'warning')
         return redirect(url_for('login'))
 
     try:
         conn = sqlite3.connect('turhelp.db')
-        conn.row_factory = sqlite3.Row  # Позволяет обращаться к полям по имени
+        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Получаем данные пользователя
+        # Получаем данные пользователя по ID
         cursor.execute("""
             SELECT id, name, surname, thname, birthday, tnumber, avatar, regdate 
             FROM Clients 
-            WHERE name = ?
-        """, (session['user_name'],))
+            WHERE id = ?
+        """, (session['user_id'],))
         user_data = cursor.fetchone()
 
         if not user_data:
@@ -209,7 +225,7 @@ def profile():
 # Роут для обновления профиля
 @app.route('/profile/update', methods=['POST'])
 def update_profile():
-    if 'user_name' not in session:
+    if 'user_id' not in session:
         return jsonify({'success': False, 'error': 'Требуется авторизация'}), 401
 
     try:
@@ -220,6 +236,12 @@ def update_profile():
         tnumber = request.form.get('tnumber', '').strip()
         cropped_image = request.form.get('cropped_image', '')
 
+        # Нормализуем номер телефона
+        tnumber = normalize_phone_number(tnumber)
+
+        if len(tnumber) != 11:
+            return jsonify({'success': False, 'error': 'Введите корректный номер телефона'}), 400
+
         if not all([name, surname, tnumber]):
             return jsonify({'success': False, 'error': 'Имя, фамилия и телефон обязательны'}), 400
 
@@ -227,15 +249,9 @@ def update_profile():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        cursor.execute("SELECT id FROM Clients WHERE name = ?", (session['user_name'],))
-        user = cursor.fetchone()
+        user_id = session['user_id']
 
-        if not user:
-            conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'}), 404
-
-        user_id = user['id']
-
+        # Проверяем, не занят ли номер телефона другим пользователем
         cursor.execute("SELECT id FROM Clients WHERE tnumber = ? AND id != ?", (tnumber, user_id))
         if cursor.fetchone():
             conn.close()
@@ -269,7 +285,9 @@ def update_profile():
         conn.commit()
         conn.close()
 
-        session['user_name'] = name
+        # Обновляем имя в сессии, если оно изменилось
+        if session.get('user_name') != name:
+            session['user_name'] = name
 
         return jsonify({'success': True, 'message': 'Профиль успешно обновлен'})
 
@@ -281,7 +299,7 @@ def update_profile():
 # Роут для изменения пароля
 @app.route('/profile/change-password', methods=['POST'])
 def change_password():
-    if 'user_name' not in session:
+    if 'user_id' not in session:
         return jsonify({'success': False, 'error': 'Требуется авторизация'}), 401
 
     try:
@@ -298,7 +316,7 @@ def change_password():
         conn = sqlite3.connect('turhelp.db')
         cursor = conn.cursor()
 
-        cursor.execute("SELECT password FROM Clients WHERE name = ?", (session['user_name'],))
+        cursor.execute("SELECT password FROM Clients WHERE id = ?", (session['user_id'],))
         user = cursor.fetchone()
 
         if not user:
@@ -314,8 +332,8 @@ def change_password():
         new_hash = generate_password_hash(new_password)
 
         # Обновляем пароль
-        cursor.execute("UPDATE Clients SET password = ? WHERE name = ?",
-                       (new_hash, session['user_name']))
+        cursor.execute("UPDATE Clients SET password = ? WHERE id = ?",
+                       (new_hash, session['user_id']))
 
         conn.commit()
         conn.close()
@@ -402,6 +420,17 @@ def registrations():
             number = request.form.get('number', '').strip()
             password = request.form.get('password', '').strip()
 
+            # НОРМАЛИЗУЕМ НОМЕР ТЕЛЕФОНА (удаляем плюс, 8->7)
+            number = normalize_phone_number(number)
+
+            # Проверка, что номер содержит 11 цифр
+            if len(number) != 11:
+                error_msg = 'Введите корректный номер телефона (10 цифр после 7 или 8)'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'error': error_msg})
+                flash(error_msg, 'danger')
+                return render_template('registrations.html')
+
             # Проверка обязательных полей
             if not all([name, surname, birthday, number, password]):
                 error_msg = 'Все поля кроме отчества обязательны для заполнения'
@@ -478,6 +507,8 @@ def login():
     if request.method == 'POST':
         number = request.form.get('number', '').strip()
         password = request.form.get('password', '').strip()
+
+        number = normalize_phone_number(number)
 
         # Проверка обязательных полей
         if not number or not password:
@@ -616,7 +647,7 @@ def get_reviews(tour_id):
         with db_connection() as cursor:
             cursor.execute("""
                 SELECT r.id, r.stars, r.description, r.date, 
-                       c.name, c.surname, c.avatar
+                       c.name, c.surname, c.avatar, c.id as client_id
                 FROM reviews r
                 JOIN Clients c ON r.clientid = c.id
                 WHERE r.tourid = ?
@@ -624,41 +655,30 @@ def get_reviews(tour_id):
             """, (tour_id,))
             reviews = cursor.fetchall()
 
-        if not reviews:
-            return jsonify({'reviews': []})
-
-        # Форматируем отзывы для отправки
         formatted_reviews = []
         for review in reviews:
-            # Формируем полное имя
             full_name = f"{review[5] or ''} {review[4] or ''}".strip()
             if not full_name:
                 full_name = 'Аноним'
-
-            # Путь к аватару
-            avatar = review[6] if review[6] else '/static/images/default-avatar.png'
 
             formatted_reviews.append({
                 'id': review[0],
                 'stars': review[1],
                 'description': review[2],
                 'date': review[3],
-                'name': review[4],
-                'surname': review[5],
-                'full_name': full_name,
-                'avatar': avatar
+                'full_name': full_name,  # Только для отображения
+                'avatar': review[6] if review[6] else '/static/images/default-avatar.png',
+                'client_id': review[7]   # Только для проверки прав
             })
 
         return jsonify({'reviews': formatted_reviews})
-
     except Exception as e:
-        app.logger.error(f"Error fetching reviews: {str(e)}")
         return jsonify({'reviews': [], 'error': str(e)}), 500
 
 # Роут для добавления отзыва
 @app.route('/add_review', methods=['POST'])
 def add_review():
-    if 'user_name' not in session:
+    if 'user_id' not in session:
         return jsonify({'success': False, 'error': 'Требуется авторизация'}), 401
 
     data = request.get_json()
@@ -674,14 +694,7 @@ def add_review():
 
     try:
         with db_connection() as cursor:
-            # Получаем ID клиента
-            cursor.execute("SELECT id FROM Clients WHERE name = ?", (session['user_name'],))
-            client_data = cursor.fetchone()
-
-            if not client_data:
-                return jsonify({'success': False, 'error': 'Пользователь не найден'}), 404
-
-            client_id = client_data[0]
+            client_id = session['user_id']
 
             # Добавляем отзыв
             cursor.execute("""
@@ -697,26 +710,26 @@ def add_review():
 # Роут для удаления пользователем отзыва
 @app.route('/delete_review/<int:review_id>', methods=['DELETE'])
 def delete_review(review_id):
-    # Удаление отзыва
-    if 'user_name' not in session:
+    if 'user_id' not in session:
         return jsonify({'success': False, 'error': 'Требуется авторизация'}), 401
 
     try:
         with db_connection() as cursor:
             # Проверяем, принадлежит ли отзыв текущему пользователю
             cursor.execute("""
-                SELECT c.name 
-                FROM reviews r
-                JOIN Clients c ON r.clientid = c.id
-                WHERE r.id = ?
+                SELECT clientid 
+                FROM reviews 
+                WHERE id = ?
             """, (review_id,))
-            review_owner = cursor.fetchone()
+            result = cursor.fetchone()
 
-            if not review_owner:
+            if not result:
                 return jsonify({'success': False, 'error': 'Отзыв не найден'}), 404
 
+            review_owner_id = result[0]
+
             # Разрешаем удалять либо автору, либо админу
-            if review_owner[0] != session['user_name'] and not session.get('is_admin', False):
+            if review_owner_id != session['user_id'] and not session.get('is_admin', False):
                 return jsonify({'success': False, 'error': 'Недостаточно прав'}), 403
 
             # Удаляем отзыв
