@@ -87,7 +87,7 @@ document.getElementById('search-btn').addEventListener('click', function() {
                         <h3 class="h1">${agency.name}</h3>
                         <p class="gl mb-1"><strong>Адрес:</strong> ${agency.address}</p>
                         <p class="gl mb-1"><strong>Страна:</strong> ${agency.country}</p>
-                        <p class="gl mb-1"><strong>Цена:</strong> ${agency.price} руб.</p>
+                        <p class="gl mb-1"><strong>Средняя цена:</strong> ${agency.price} руб.</p>
                     </div>
                 </div>
             </div>

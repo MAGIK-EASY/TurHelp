@@ -119,3 +119,56 @@ body {
     margin-top: 12px;
     line-height: 1.6;
 }
+
+/* Стили для гистограммы распределения оценок */
+.rating-bar-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 10px;
+}
+
+.rating-bar-label {
+    width: 50px;
+    text-align: right;
+    font-weight: 500;
+    color: #ffc107;
+}
+
+.rating-bar-container {
+    flex-grow: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    height: 24px;
+    position: relative;
+}
+
+.rating-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffc107, #ff9800);
+    border-radius: 4px;
+    transition: width 0.6s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    min-width: 30px;
+}
+
+.rating-bar-count {
+    width: 30px;
+    font-size: 0.9rem;
+    color: #adb5bd;
+    text-align: left;
+}
+
+.rating-bar-empty {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.rating-bar-percent {
+    font-size: 0.75rem;
+    color: #000;
+    font-weight: 600;
+}

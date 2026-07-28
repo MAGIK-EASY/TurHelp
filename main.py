@@ -3,10 +3,8 @@ import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from contextlib import contextmanager
-from flask import send_from_directory
 from admin_routes import admin_bp
 import os
-from werkzeug.utils import secure_filename
 from PIL import Image
 import base64
 import re
@@ -620,11 +618,32 @@ def stats_page():
                     'reviews_count': row[8]
                 })
 
+                # Получаем рейтинг агентств
+                cursor.execute("""
+                    SELECT a.name, ROUND(AVG(r.stars), 1) as avg_rating, COUNT(DISTINCT t.id) as tours_count, COUNT(r.id) as reviews_count
+                    FROM Agency a
+                    LEFT JOIN Tours t ON a.id = t.agencyid
+                    LEFT JOIN reviews r ON t.id = r.tourid
+                    GROUP BY a.id
+                    ORDER BY avg_rating DESC
+                    LIMIT 10
+                """)
+                agencies_ratings = []
+                for row in cursor.fetchall():
+                    agencies_ratings.append({
+                        'name': row[0],
+                        'avg_rating': row[1],
+                        'tours_count': row[2],
+                        'reviews_count': row[3]
+                    })
+
         return render_template("stats.html",
-                           new_users_count=new_users_count,
-                           popular_tours=popular_tours,
-                           user_name=session.get('user_name'),
-                           is_authenticated='user_name' in session)
+            new_users_count=new_users_count,
+            popular_tours=popular_tours,
+            agencies_ratings=agencies_ratings,
+            user_name=session.get('user_name'),
+            is_authenticated='user_name' in session)
+
     except Exception as e:
         app.logger.error(f"Error fetching stats: {str(e)}")
         flash('Произошла ошибка при загрузке статистики', 'danger')
@@ -770,6 +789,37 @@ def get_tour_rating(tour_id):
                 })
     except Exception as e:
         app.logger.error(f"Error fetching tour rating: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/get_tour_rating_distribution/<int:tour_id>')
+def get_tour_rating_distribution(tour_id):
+    try:
+        with db_connection() as cursor:
+            cursor.execute("""
+                SELECT stars, COUNT(*) as count
+                FROM reviews
+                WHERE tourid = ?
+                GROUP BY stars
+                ORDER BY stars DESC
+            """, (tour_id,))
+            distribution = cursor.fetchall()
+
+            # Заполняем все оценки от 1 до 5
+            result = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+            for row in distribution:
+                result[row[0]] = row[1]
+
+            # Вычисляем общее количество отзывов
+            total_reviews = sum(result.values())
+
+            return jsonify({
+                'success': True,
+                'distribution': result,
+                'total_reviews': total_reviews  # <-- ДОБАВЛЕНО
+            })
+    except Exception as e:
+        app.logger.error(f"Error in get_tour_rating_distribution: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

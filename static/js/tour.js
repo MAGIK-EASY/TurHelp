@@ -51,6 +51,78 @@ function loadTourRating(tourId) {
 		});
 }
 
+// Функция загрузки распределения оценок
+function loadRatingDistribution(tourId) {
+    fetch(`/get_tour_rating_distribution/${tourId}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Ошибка загрузки распределения');
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                console.error('Error:', data.error);
+                return;
+            }
+            
+            const totalReviews = data.total_reviews;
+            const distribution = data.distribution;
+            
+            // Если нет отзывов — скрываем карточку
+            if (totalReviews === 0) {
+                document.getElementById('rating-distribution-card').style.display = 'none';
+                return;
+            }
+            
+            // Показываем карточку
+            document.getElementById('rating-distribution-card').style.display = 'block';
+            
+            // Обновляем общее количество отзывов
+            document.getElementById('total-reviews-count').textContent = 
+                `На основе ${totalReviews} ${getReviewWord(totalReviews)}`;
+            
+            // Строим гистограмму
+            const container = document.getElementById('rating-distribution');
+            let html = '';
+            
+            // От 5 звезд к 1 звезде
+            for (let stars = 5; stars >= 1; stars--) {
+                const count = distribution[stars] || 0;
+                const percent = totalReviews > 0 ? (count / totalReviews * 100) : 0;
+                
+                html += `
+                    <div class="rating-bar-item">
+                        <div class="rating-bar-label">
+                            ${stars} <i class="fas fa-star"></i>
+                        </div>
+                        <div class="rating-bar-container ${count === 0 ? 'rating-bar-empty' : ''}">
+                            <div class="rating-bar-fill" 
+                                 style="width: ${Math.max(percent, count > 0 ? 5 : 0)}%">
+                                ${count > 0 ? `<span class="rating-bar-percent">${percent.toFixed(0)}%</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="rating-bar-count">${count}</div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading rating distribution:', error);
+            document.getElementById('rating-distribution-card').style.display = 'none';
+        });
+}
+
+// Вспомогательная функция для склонения слова "отзыв"
+function getReviewWord(count) {
+    const lastDigit = count % 10;
+    const lastTwoDigits = count % 100;
+    
+    if (lastDigit <= 9 && lastTwoDigits >= 11 && lastTwoDigits <= 19) return 'отзывов';
+    if (lastDigit === 1) return 'отзыв';
+    return 'отзывов';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	// Получаем данные тура из sessionStorage
 	const tourData = JSON.parse(sessionStorage.getItem('selectedTour'));
@@ -77,6 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	
 	// Загружаем рейтинг тура
 	loadTourRating(tourId);
+	loadRatingDistribution(tourId);
 	
 	// Устанавливаем изображение тура
 	const imageFile = tourData.image || 'default.jpg';
@@ -242,6 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		}
 	});
+	
 
 	// Первоначальная загрузка отзывов
 	loadReviews();

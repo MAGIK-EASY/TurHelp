@@ -264,8 +264,14 @@ def edit_tour(tour_id):
             conn.close()
 
     # GET запрос - показываем форму
-        cursor.execute("SELECT id, country, agencyid, duration, price, description FROM Tours WHERE id=?", (tour_id,))
+    cursor.execute("SELECT id, country, agencyid, duration, price, description FROM Tours WHERE id=?", (tour_id,))
     tour_data = cursor.fetchone()
+
+    # ПРОВЕРКА: если тур не найден
+    if not tour_data:
+        flash('Тур не найден', 'danger')
+        conn.close()
+        return redirect(url_for('admin_bp.manage_tours'))
 
     # Преобразуем в словарь
     tour = {
@@ -281,10 +287,6 @@ def edit_tour(tour_id):
     cursor.execute("SELECT id, name FROM Agency")
     agencies = [{'id': row[0], 'name': row[1]} for row in cursor.fetchall()]
     conn.close()
-
-    if not tour:
-        flash('Тур не найден', 'danger')
-        return redirect(url_for('admin_bp.manage_tours'))
 
     return render_template("edit_tour.html",
                            tour=tour,
